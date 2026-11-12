@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AssetLoop - Superadmin Web Portal</title>
-  <link rel="icon" type="image/png" href="/images/logo_assetloop_app.png">
+  <link rel="icon" type="image/png" href="/images/logo_assetloop_icon.png">
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Google Fonts: Inter -->
@@ -45,7 +45,7 @@
       <!-- Header -->
       <div class="bg-gradient-to-r from-indigo-600 via-indigo-700 to-indigo-800 p-8 text-center text-white relative">
         <div class="w-20 h-20 mx-auto bg-white rounded-2xl p-2 shadow-lg flex items-center justify-center mb-3">
-          <img src="/images/logo_assetloop_app.png" alt="AssetLoop Logo" class="max-w-full max-h-full object-contain">
+          <img src="/images/logo_assetloop_icon.png" alt="AssetLoop Logo" class="max-w-full max-h-full object-contain">
         </div>
         <h1 class="text-2xl font-extrabold tracking-tight">AssetLoop</h1>
         <p class="text-indigo-200 text-sm mt-1 font-medium">Superadmin Web Backend</p>
@@ -74,7 +74,12 @@
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Password</label>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Password</label>
+            <button type="button" onclick="openForgotModal()" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition">
+              Lupa Kata Sandi?
+            </button>
+          </div>
           <div class="relative">
             <input type="password" id="loginPassword" required value="superadmin123"
               class="w-full px-4 py-3 pl-11 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition">
@@ -138,7 +143,7 @@
         <!-- Logo & Brand -->
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 bg-indigo-50 border border-indigo-100 rounded-xl p-1 flex items-center justify-center">
-            <img src="/images/logo_assetloop_app.png" alt="Logo" class="max-w-full max-h-full object-contain">
+            <img src="/images/logo_assetloop_icon.png" alt="Logo" class="max-w-full max-h-full object-contain">
           </div>
           <div>
             <div class="flex items-center gap-2">
@@ -253,10 +258,10 @@
         <div class="bg-gradient-to-r from-indigo-900 to-slate-900 text-white rounded-2xl p-6 shadow-md flex flex-col md:flex-row items-center justify-between gap-4">
           <div class="flex items-center gap-4">
             <div class="w-14 h-14 bg-white/10 rounded-xl p-2 shrink-0 flex items-center justify-center">
-              <img src="/images/logo_assetloop_app.png" alt="Logo" class="max-w-full max-h-full object-contain">
+              <img src="/images/logo_assetloop_icon.png" alt="Logo" class="max-w-full max-h-full object-contain">
             </div>
             <div>
-              <h2 class="text-lg font-bold">Portal Superadmin AssetLoop v2.0</h2>
+              <h2 class="text-lg font-bold">Portal Superadmin AssetLoop v1.0.0</h2>
               <p class="text-slate-300 text-sm mt-0.5">
                 Role Anda memiliki otorisasi penuh: membuka aplikasi mobile dan web dashboard.
                 Admin hanya beroperasi di aplikasi mobile, dan Pengguna hanya dapat meminjam aset.
@@ -719,6 +724,49 @@ SUPABASE_KEY=eyJh......</pre>
     </div>
   </div>
 
+  <!-- ========================================================================= -->
+  <!-- MODAL: LUPA KATA SANDI -->
+  <!-- ========================================================================= -->
+  <div id="forgotModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <h3 class="font-bold text-slate-900 text-lg flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+          </div>
+          Reset Kata Sandi
+        </h3>
+        <button onclick="closeForgotModal()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold leading-none">&times;</button>
+      </div>
+
+      <div id="forgotAlert" class="hidden p-3 rounded-xl mb-4 text-xs font-medium"></div>
+
+      <form onsubmit="handleResetPassword(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Email Terdaftar</label>
+          <input type="email" id="forgotEmail" required placeholder="superadmin@assetloop.com"
+            class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Kata Sandi Baru</label>
+          <input type="password" id="forgotNewPassword" required minlength="6" placeholder="Minimal 6 karakter"
+            class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Konfirmasi Kata Sandi Baru</label>
+          <input type="password" id="forgotConfirmPassword" required minlength="6" placeholder="Ulangi kata sandi baru"
+            class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        </div>
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+          <button type="button" onclick="closeForgotModal()" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-xl font-medium">Batal</button>
+          <button type="submit" id="forgotBtn" class="px-5 py-2.5 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-md shadow-indigo-500/20">
+            Perbarui Kata Sandi
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- JAVASCRIPT APPLICATION LOGIC -->
   <script>
     const API = '/api';
@@ -761,6 +809,64 @@ SUPABASE_KEY=eyJh......</pre>
       document.getElementById('loginEmail').value = email;
       document.getElementById('loginPassword').value = password;
       document.getElementById('loginError').classList.add('hidden');
+    }
+
+    function openForgotModal() {
+      document.getElementById('forgotEmail').value = document.getElementById('loginEmail').value.trim();
+      document.getElementById('forgotNewPassword').value = '';
+      document.getElementById('forgotConfirmPassword').value = '';
+      const alert = document.getElementById('forgotAlert');
+      alert.className = 'hidden';
+      document.getElementById('forgotModal').classList.remove('hidden');
+    }
+
+    function closeForgotModal() {
+      document.getElementById('forgotModal').classList.add('hidden');
+    }
+
+    async function handleResetPassword(e) {
+      e.preventDefault();
+      const email = document.getElementById('forgotEmail').value.trim();
+      const newPassword = document.getElementById('forgotNewPassword').value;
+      const confirmPassword = document.getElementById('forgotConfirmPassword').value;
+      const alert = document.getElementById('forgotAlert');
+      const btn = document.getElementById('forgotBtn');
+
+      if (newPassword !== confirmPassword) {
+        alert.className = 'p-3 rounded-xl mb-4 text-xs font-medium bg-rose-50 border border-rose-200 text-rose-700';
+        alert.textContent = 'Konfirmasi kata sandi tidak cocok.';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Memproses...';
+
+      try {
+        const res = await fetch(`${API}/auth/reset-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, new_password: newPassword })
+        });
+        const json = await res.json();
+        if (res.ok && json.success) {
+          alert.className = 'p-3 rounded-xl mb-4 text-xs font-medium bg-emerald-50 border border-emerald-200 text-emerald-700';
+          alert.textContent = 'Kata sandi berhasil diperbarui! Silakan masuk kembali dengan kata sandi baru Anda.';
+          setTimeout(() => {
+            closeForgotModal();
+            document.getElementById('loginEmail').value = email;
+            document.getElementById('loginPassword').value = '';
+          }, 1500);
+        } else {
+          alert.className = 'p-3 rounded-xl mb-4 text-xs font-medium bg-rose-50 border border-rose-200 text-rose-700';
+          alert.textContent = json.message || 'Gagal mereset kata sandi';
+        }
+      } catch (err) {
+        alert.className = 'p-3 rounded-xl mb-4 text-xs font-medium bg-rose-50 border border-rose-200 text-rose-700';
+        alert.textContent = 'Error sambungan: ' + err.message;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Perbarui Kata Sandi';
+      }
     }
 
     async function handleLogin(e) {
