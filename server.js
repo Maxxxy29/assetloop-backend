@@ -23,7 +23,7 @@ app.get('/api/health', async (_req, res) => {
   const status = await db.checkConnection();
   ok(res, {
     service: 'AssetLoop Supabase Backend',
-    version: '2.0.0',
+    version: '1.0.0',
     database: status.connected ? 'supabase_connected' : 'fallback_mode',
     details: status,
     timestamp: new Date().toISOString()
@@ -105,6 +105,36 @@ app.post('/api/auth/register', async (req, res) => {
     ok(res, user, 201);
   } catch (e) {
     return fail(res, e.message || 'Pendaftaran gagal', 409);
+  }
+});
+
+// 4. Lupa & Reset Kata Sandi (Mobile App & Web)
+app.post('/api/auth/reset-password', async (req, res) => {
+  const { email, new_password } = req.body;
+  if (!email || !new_password) {
+    return fail(res, 'Email dan kata sandi baru wajib diisi', 400);
+  }
+  if (new_password.length < 6) {
+    return fail(res, 'Kata sandi baru minimal 6 karakter', 400);
+  }
+  try {
+    const user = await db.findUserByEmail(email);
+    if (!user) {
+      return fail(res, 'Email tidak ditemukan. Pastikan email terdaftar.', 404);
+    }
+    const hash = await bcrypt.hash(new_password, 10);
+    await db.updateUserPassword(user.id, hash);
+    try {
+      await db.createNotification({
+        recipient_email: user.email,
+        title: 'Kata Sandi Diperbarui',
+        body: `Kata sandi akun Anda berhasil diubah pada ${new Date().toLocaleString('id-ID')}. Jika ini bukan Anda, segera hubungi admin.`,
+        type: 'system'
+      });
+    } catch (_) {}
+    ok(res, { success: true, message: 'Kata sandi berhasil diperbarui. Silakan masuk kembali.' });
+  } catch (e) {
+    return fail(res, e.message || 'Gagal mengatur ulang kata sandi', 500);
   }
 });
 
