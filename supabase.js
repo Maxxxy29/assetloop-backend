@@ -469,7 +469,7 @@ async function createAsset(b) {
 }
 
 async function updateAsset(id, b) {
-  const nid = Number(id);
+  const nid = isNaN(Number(id)) ? id : Number(id);
   const photo = b.image_url !== undefined ? (b.image_url ? String(b.image_url).trim() : null) : undefined;
   const updateData = {
     code: b.code,
@@ -485,14 +485,24 @@ async function updateAsset(id, b) {
   }
   if (supabase) {
     try {
-      const { error } = await supabase.from('assets').update(updateData).eq('id', nid);
-      if (error && error.message && error.message.includes('image_url')) {
-        delete updateData.image_url;
-        await supabase.from('assets').update(updateData).eq('id', nid);
+      const { data, error } = await supabase.from('assets').update(updateData).eq('id', nid).select();
+      if (error) {
+        console.error('Supabase update asset error:', error);
+        if (error.code === '23505') {
+          throw new Error('Kode aset sudah digunakan oleh aset lain');
+        }
+        if (error.message && error.message.includes('image_url')) {
+          delete updateData.image_url;
+          const { error: err2 } = await supabase.from('assets').update(updateData).eq('id', nid);
+          if (err2) throw err2;
+        }
       }
-    } catch (_) {}
+    } catch (err) {
+      if (err.message && err.message.includes('sudah digunakan')) throw err;
+      console.error('updateAsset error in supabase:', err);
+    }
   }
-  const a = memAssets.find(x => x.id === nid);
+  const a = memAssets.find(x => x.id === nid || String(x.id) === String(id));
   if (a) {
     a.code = b.code;
     a.name = b.name;
@@ -505,7 +515,7 @@ async function updateAsset(id, b) {
       a.image_url = photo;
     }
   }
-  return { updated: true };
+  return { updated: true, id: nid };
 }
 
 async function deleteAsset(id) {
