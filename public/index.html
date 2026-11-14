@@ -551,53 +551,33 @@ SUPABASE_KEY=eyJh......</pre>
       <form id="assetForm" onsubmit="saveAsset(event)" class="p-6 space-y-4">
         <input type="hidden" id="assetId">
 
-        <!-- 2 OPSI FOTO ASET: UPLOAD FILE ATAU LINK INTERNET -->
+        <!-- UPLOAD FOTO ASET (LANGSUNG DARI FILE KOMPUTER) -->
         <div>
           <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Foto Aset</label>
           <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 flex flex-col sm:flex-row gap-3 items-center">
             <!-- Preview Box -->
-            <div id="assetPhotoPreviewWrapper" class="relative w-20 h-20 shrink-0 rounded-xl bg-white border border-slate-200 overflow-hidden shadow-sm flex items-center justify-center">
-              <img id="assetPhotoPreview" src="" alt="Preview Foto" class="hidden w-full h-full object-cover">
+            <div id="assetPhotoPreviewWrapper" class="relative w-20 h-20 shrink-0 rounded-xl bg-white border border-slate-200 overflow-hidden shadow-sm flex items-center justify-center p-1">
+              <img id="assetPhotoPreview" src="" alt="Preview Foto" class="hidden w-full h-full object-contain">
               <div id="assetPhotoPlaceholder" class="text-slate-400 text-center p-1">
                 <svg class="w-7 h-7 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                 <span class="text-[9px] block font-semibold text-slate-400">Tanpa Foto</span>
               </div>
             </div>
 
-            <!-- Tab Switcher & Inputs -->
+            <!-- Upload File Input & Remove -->
             <div class="flex-1 w-full space-y-2">
-              <div class="flex items-center gap-1.5">
-                <button type="button" id="tabPhotoFile" onclick="setPhotoTab('file')"
-                  class="px-2.5 py-1 text-xs font-bold rounded-lg bg-teal-600 text-white shadow-sm transition">
-                  📁 Upload File
-                </button>
-                <button type="button" id="tabPhotoUrl" onclick="setPhotoTab('url')"
-                  class="px-2.5 py-1 text-xs font-bold rounded-lg bg-slate-200 text-slate-700 hover:bg-slate-300 transition">
-                  🔗 Link Internet
-                </button>
+              <div class="flex items-center gap-2">
+                <label class="cursor-pointer inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-teal-300 bg-teal-50 hover:bg-teal-100/80 text-teal-800 text-xs font-bold transition shadow-xs">
+                  <svg class="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                  <span>Pilih File Gambar</span>
+                  <input type="file" id="assetFileInput" accept="image/jpeg,image/png,image/webp" class="hidden" onchange="handleAssetFileUpload(event)">
+                </label>
                 <button type="button" id="btnRemovePhoto" onclick="removeAssetPhoto()"
-                  class="hidden ml-auto px-2 py-1 text-xs font-bold rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition">
+                  class="hidden px-2.5 py-2 text-xs font-bold rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 transition">
                   Hapus Foto
                 </button>
               </div>
-
-              <!-- Input File (Option 1) -->
-              <div id="photoFileInputArea">
-                <label class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-teal-300 bg-teal-50/60 hover:bg-teal-50 text-teal-700 text-xs font-semibold">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                  <span>Pilih file gambar</span>
-                  <input type="file" id="assetFileInput" accept="image/*" class="hidden" onchange="handleAssetFileUpload(event)">
-                </label>
-                <span class="text-[11px] text-slate-400 ml-2">JPG, PNG, WEBP</span>
-              </div>
-
-              <!-- Input URL (Option 2) -->
-              <div id="photoUrlInputArea" class="hidden">
-                <input type="url" id="assetUrlInput" placeholder="https://contoh.com/gambar-aset.jpg"
-                  oninput="handleAssetUrlChange(this.value)"
-                  class="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs focus:ring-2 focus:ring-teal-500">
-                <p class="text-[10px] text-slate-400 mt-1">Tempelkan link gambar langsung dari internet</p>
-              </div>
+              <p class="text-[11px] text-slate-500">Mendukung format JPG, PNG, atau WEBP. Foto otomatis dioptimalkan agar ringan dan tampil pas di aplikasi HP.</p>
             </div>
           </div>
         </div>
@@ -1133,8 +1113,8 @@ SUPABASE_KEY=eyJh......</pre>
         const available = Math.max(0, a.total_stock - a.damaged_count - (a.borrowed || 0));
         const photoSrc = resolveAssetPhoto(a);
         const photoHtml = photoSrc ? `
-          <div class="w-12 h-12 rounded-xl overflow-hidden border border-slate-200 bg-white shrink-0 shadow-xs flex items-center justify-center p-0.5">
-            <img src="${photoSrc}" alt="${a.name}" class="w-full h-full object-cover rounded-lg block" onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\\'w-full h-full bg-teal-50 text-teal-700 font-bold text-xs flex items-center justify-center\\'>${a.code.slice(0,2)}</div>';">
+          <div class="w-12 h-12 rounded-xl overflow-hidden border border-slate-200 bg-white shrink-0 shadow-xs flex items-center justify-center p-1">
+            <img src="${photoSrc}" alt="${a.name}" class="w-full h-full object-contain rounded-lg block" onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\\'w-full h-full bg-teal-50 text-teal-700 font-bold text-xs flex items-center justify-center\\'>${a.code.slice(0,2)}</div>';">
           </div>
         ` : `
           <div class="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 shrink-0">
@@ -1343,29 +1323,8 @@ SUPABASE_KEY=eyJh......</pre>
       }
     }
 
-    // Asset Photo Handlers (Upload File & Internet URL)
+    // Asset Photo Handlers (Upload File Langsung dengan Kompresi Ringan)
     let currentAssetPhoto = null;
-    let currentPhotoTab = 'file';
-
-    function setPhotoTab(tab) {
-      currentPhotoTab = tab;
-      const tabFile = document.getElementById('tabPhotoFile');
-      const tabUrl = document.getElementById('tabPhotoUrl');
-      const fileArea = document.getElementById('photoFileInputArea');
-      const urlArea = document.getElementById('photoUrlInputArea');
-
-      if (tab === 'file') {
-        tabFile.className = 'px-2.5 py-1 text-xs font-bold rounded-lg bg-teal-600 text-white shadow-sm transition';
-        tabUrl.className = 'px-2.5 py-1 text-xs font-bold rounded-lg bg-slate-200 text-slate-700 hover:bg-slate-300 transition';
-        fileArea.classList.remove('hidden');
-        urlArea.classList.add('hidden');
-      } else {
-        tabUrl.className = 'px-2.5 py-1 text-xs font-bold rounded-lg bg-teal-600 text-white shadow-sm transition';
-        tabFile.className = 'px-2.5 py-1 text-xs font-bold rounded-lg bg-slate-200 text-slate-700 hover:bg-slate-300 transition';
-        urlArea.classList.remove('hidden');
-        fileArea.classList.add('hidden');
-      }
-    }
 
     function updateAssetPhotoPreview(src) {
       const preview = document.getElementById('assetPhotoPreview');
@@ -1394,31 +1353,41 @@ SUPABASE_KEY=eyJh......</pre>
         alert('Harap pilih file gambar (JPG, PNG, atau WEBP)');
         return;
       }
-      if (file.size > 5 * 1024 * 1024) {
-        alert('Ukuran file maksimal 5MB');
-        return;
-      }
+      
       const reader = new FileReader();
       reader.onload = (e) => {
-        updateAssetPhotoPreview(e.target.result);
+        const img = new Image();
+        img.onload = () => {
+          // Kompresi otomatis via Canvas: batas maksimal 1024px agar ringan dan cepat di HP
+          const maxDim = 1024;
+          let width = img.width;
+          let height = img.height;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          updateAssetPhotoPreview(compressedDataUrl);
+        };
+        img.src = e.target.result;
       };
       reader.readAsDataURL(file);
-    }
-
-    function handleAssetUrlChange(val) {
-      if (val && val.trim().length > 4) {
-        updateAssetPhotoPreview(val.trim());
-      } else {
-        updateAssetPhotoPreview(null);
-      }
     }
 
     function removeAssetPhoto() {
       updateAssetPhotoPreview(null);
       const fileInput = document.getElementById('assetFileInput');
       if (fileInput) fileInput.value = '';
-      const urlInput = document.getElementById('assetUrlInput');
-      if (urlInput) urlInput.value = '';
     }
 
     // Asset CRUD
@@ -1433,19 +1402,10 @@ SUPABASE_KEY=eyJh......</pre>
       document.getElementById('assetTotalStock').value = asset ? asset.total_stock : 1;
       document.getElementById('assetDamagedCount').value = asset ? asset.damaged_count : 0;
 
-      // Reset photo inputs & set existing photo
+      // Reset photo input & pasang foto yang sudah ada
       const fileInput = document.getElementById('assetFileInput');
       if (fileInput) fileInput.value = '';
       const photo = asset ? (resolveAssetPhoto(asset) || '') : '';
-      const urlInput = document.getElementById('assetUrlInput');
-      if (urlInput) {
-        urlInput.value = (photo && (photo.startsWith('http://') || photo.startsWith('https://'))) ? photo : '';
-      }
-      if (photo && (photo.startsWith('http://') || photo.startsWith('https://'))) {
-        setPhotoTab('url');
-      } else {
-        setPhotoTab('file');
-      }
       updateAssetPhotoPreview(photo);
 
       document.getElementById('assetModal').classList.remove('hidden');
@@ -1463,12 +1423,6 @@ SUPABASE_KEY=eyJh......</pre>
     async function saveAsset(e) {
       e.preventDefault();
       const id = document.getElementById('assetId').value;
-      let finalPhoto = currentAssetPhoto;
-      if (currentPhotoTab === 'url') {
-        const urlInputVal = (document.getElementById('assetUrlInput').value || '').trim();
-        if (urlInputVal) finalPhoto = urlInputVal;
-      }
-
       const data = {
         code: document.getElementById('assetCode').value.trim(),
         name: document.getElementById('assetName').value.trim(),
@@ -1477,7 +1431,7 @@ SUPABASE_KEY=eyJh......</pre>
         extra: document.getElementById('assetExtra').value.trim(),
         total_stock: Number(document.getElementById('assetTotalStock').value),
         damaged_count: Number(document.getElementById('assetDamagedCount').value),
-        image_url: finalPhoto || null
+        image_url: currentAssetPhoto || null
       };
 
       const btnSubmit = e.target.querySelector('button[type="submit"]');
