@@ -69,7 +69,7 @@
           <div class="relative">
             <input type="email" id="loginEmail" required value="superadmin@assetloop.com"
               class="w-full px-4 py-3 pl-11 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-sm transition">
-            <svg class="w-5 h-5 text-slate-400 absolute left-3.5 top-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+            <svg class="w-5 h-5 text-slate-400 absolute left-3.5 top-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
           </div>
         </div>
 
@@ -367,16 +367,20 @@
 
       <!-- TAB 3: LOAN REQUESTS -->
       <section id="tab-loans" class="hidden space-y-6">
-        <div class="flex items-center justify-between">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
             <h2 class="text-xl font-bold text-slate-900">Pengajuan Peminjaman Aset</h2>
             <p class="text-sm text-slate-500">Daftar pengajuan pinjaman aset dari pengguna.</p>
           </div>
-          <div class="flex gap-2">
-            <button onclick="filterLoansByStatus('')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-teal-50 text-teal-700">Semua</button>
-            <button onclick="filterLoansByStatus('pending')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 text-amber-700">Menunggu</button>
-            <button onclick="filterLoansByStatus('approved')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700">Disetujui</button>
-            <button onclick="filterLoansByStatus('rejected')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-50 text-rose-700">Ditolak</button>
+          <div class="flex flex-wrap items-center gap-2">
+            <button onclick="filterLoansByStatus('')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-teal-50 text-teal-700 hover:bg-teal-100 transition">Semua</button>
+            <button onclick="filterLoansByStatus('pending')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 text-amber-700 hover:bg-amber-100 transition">Menunggu</button>
+            <button onclick="filterLoansByStatus('approved')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition">Disetujui</button>
+            <button onclick="filterLoansByStatus('rejected')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 transition">Ditolak</button>
+            <button onclick="exportLoansToCSV()" class="ml-2 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-[#0F2338] hover:bg-[#1E3A5F] text-white flex items-center gap-1.5 shadow-sm transition">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+              <span>Ekspor Laporan (CSV)</span>
+            </button>
           </div>
         </div>
 
@@ -390,6 +394,7 @@
                   <th class="p-4">Aset</th>
                   <th class="p-4">Rentang Waktu</th>
                   <th class="p-4">Keperluan</th>
+                  <th class="p-4">Lampiran Dokumen</th>
                   <th class="p-4">Status</th>
                   <th class="p-4 text-right">Tindakan</th>
                 </tr>
@@ -404,9 +409,15 @@
 
       <!-- TAB 4: RETURNS -->
       <section id="tab-returns" class="hidden space-y-6">
-        <div>
-          <h2 class="text-xl font-bold text-slate-900">Verifikasi Pengembalian Aset</h2>
-          <p class="text-sm text-slate-500">Pemeriksaan kondisi aset saat dikembalikan oleh peminjam.</p>
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div>
+            <h2 class="text-xl font-bold text-slate-900">Verifikasi Pengembalian Aset</h2>
+            <p class="text-sm text-slate-500">Pemeriksaan kondisi aset saat dikembalikan oleh peminjam.</p>
+          </div>
+          <button onclick="exportLoansToCSV()" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-[#0F2338] hover:bg-[#1E3A5F] text-white flex items-center gap-1.5 shadow-sm transition w-fit">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            <span>Ekspor Riwayat (CSV)</span>
+          </button>
         </div>
 
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -482,10 +493,11 @@
                 <tr>
                   <th class="p-4">ID</th>
                   <th class="p-4">Nama Lengkap</th>
-                  <th class="p-4">Email</th>
+                  <th class="p-4">Email (@assetloop.com)</th>
                   <th class="p-4">Role Saat Ini</th>
+                  <th class="p-4">Status Akun</th>
                   <th class="p-4">Hak Akses</th>
-                  <th class="p-4 text-right">Ubah Role</th>
+                  <th class="p-4 text-right">Tindakan</th>
                 </tr>
               </thead>
               <tbody id="usersTable" class="divide-y divide-slate-100">
@@ -642,7 +654,7 @@ SUPABASE_KEY=eyJh......</pre>
     <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-100">
       <div class="p-5 border-b border-slate-100 flex items-center justify-between">
         <h3 class="font-bold text-slate-900 text-lg">Tambah Pengguna Baru</h3>
-        <button onclick="closeUserModal()" class="text-slate-400 hover:text-slate-600">&times;</button>
+        <button onclick="closeUserModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
       </div>
       <form id="userForm" onsubmit="saveNewUser(event)" class="p-6 space-y-4">
         <div>
@@ -651,9 +663,13 @@ SUPABASE_KEY=eyJh......</pre>
             class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-teal-500">
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Email</label>
-          <input type="email" id="newUserEmail" required placeholder="email@perusahaan.com"
-            class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-teal-500">
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Email Resmi (Wajib @assetloop.com)</label>
+          <div class="relative">
+            <input type="email" id="newUserEmail" required placeholder="nama@assetloop.com"
+              class="w-full px-3 py-2 pl-9 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-teal-500">
+            <svg class="w-4 h-4 text-slate-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+          </div>
+          <p class="text-[11px] text-teal-600 mt-1 font-medium">* Domain email wajib berakhiran @assetloop.com</p>
         </div>
         <div>
           <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Password</label>
@@ -674,6 +690,24 @@ SUPABASE_KEY=eyJh......</pre>
           <button type="submit" class="px-4 py-2 text-sm bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold shadow-md shadow-teal-500/20">Simpan User</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: PRATINJAU DOKUMEN / BERKAS PEMINJAMAN -->
+  <!-- ========================================================================= -->
+  <div id="docPreviewModal" class="hidden fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
+      <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+        <h3 id="docPreviewTitle" class="font-bold text-slate-900 text-base">Pratinjau Dokumen Berkas</h3>
+        <button onclick="closeDocPreview()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold leading-none">&times;</button>
+      </div>
+      <div class="p-4 bg-slate-50 flex items-center justify-center overflow-auto flex-1">
+        <img id="docPreviewImg" src="" alt="Pratinjau Berkas" class="max-w-full max-h-[65vh] rounded-lg shadow-sm object-contain border border-slate-200" />
+      </div>
+      <div class="p-3 bg-white border-t border-slate-100 flex justify-end">
+        <button onclick="closeDocPreview()" class="px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 rounded-xl">Tutup Pratinjau</button>
+      </div>
     </div>
   </div>
 
@@ -1152,22 +1186,38 @@ SUPABASE_KEY=eyJh......</pre>
       const filtered = currentLoanFilter ? globalLoans.filter(l => l.loan_status === currentLoanFilter) : globalLoans;
 
       if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400">Tidak ada pengajuan</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-slate-400">Tidak ada pengajuan</td></tr>`;
         return;
       }
 
       tbody.innerHTML = filtered.map(l => `
         <tr class="hover:bg-slate-50 transition">
           <td class="p-4 font-mono text-xs text-slate-400">#${l.loan_id}</td>
-          <td class="p-4 font-medium text-slate-900">${l.user_name || '-'}<br><span class="text-xs text-slate-400">${l.email || ''}</span></td>
+          <td class="p-4 font-medium text-slate-900">${l.user_name || '-'}<br><span class="text-xs text-slate-400 font-mono">${l.email || ''}</span></td>
           <td class="p-4 font-semibold text-slate-800">${l.asset_name || '-'}<br><span class="text-xs text-teal-600 font-mono">${l.code || ''}</span></td>
           <td class="p-4 text-xs text-slate-600">${l.start_date} s/d ${l.end_date}</td>
-          <td class="p-4 text-xs text-slate-600">${l.purpose || '-'}</td>
+          <td class="p-4 text-xs text-slate-600 max-w-xs">${l.purpose || '-'}</td>
+          <td class="p-4">
+            <div class="flex items-center gap-1.5">
+              ${l.loan_letter_url ? `
+                <button onclick="previewDoc('${l.loan_letter_url.replace(/'/g, "\\'")}', 'Surat Peminjaman - #${l.loan_id}')" 
+                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-700 text-xs font-bold border border-teal-200 transition" title="Lihat Surat Peminjaman">
+                  <span>📄 Surat</span>
+                </button>
+              ` : '<span class="text-xs text-slate-300">-</span>'}
+              ${l.identity_card_url ? `
+                <button onclick="previewDoc('${l.identity_card_url.replace(/'/g, "\\'")}', 'Kartu Tanda Pengenal (KTP) - ${l.user_name || ''}')" 
+                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold border border-blue-200 transition" title="Lihat KTP">
+                  <span>🪪 KTP</span>
+                </button>
+              ` : ''}
+            </div>
+          </td>
           <td class="p-4">${statusBadge(l.loan_status)}</td>
           <td class="p-4 text-right">
             ${l.loan_status === 'pending' ? `
-              <button onclick="approveLoan(${l.loan_id})" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold mr-1">Setujui</button>
-              <button onclick="rejectLoan(${l.loan_id})" class="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold">Tolak</button>
+              <button onclick="approveLoan(${l.loan_id})" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold mr-1 transition">Setujui</button>
+              <button onclick="rejectLoan(${l.loan_id})" class="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition">Tolak</button>
             ` : '-'}
           </td>
         </tr>
@@ -1185,14 +1235,14 @@ SUPABASE_KEY=eyJh......</pre>
 
       tbody.innerHTML = returning.map(l => `
         <tr class="hover:bg-slate-50 transition">
-          <td class="p-4 font-medium text-slate-900">${l.user_name || '-'}<br><span class="text-xs text-slate-400">${l.email || ''}</span></td>
+          <td class="p-4 font-medium text-slate-900">${l.user_name || '-'}<br><span class="text-xs text-slate-400 font-mono">${l.email || ''}</span></td>
           <td class="p-4 font-semibold text-slate-800">${l.asset_name || '-'}<br><span class="text-xs text-teal-600 font-mono">${l.code || ''}</span></td>
           <td class="p-4 text-xs text-slate-600">${l.return_date || l.end_date}</td>
           <td class="p-4 text-xs text-slate-600 max-w-xs">${l.return_note || '-'}</td>
           <td class="p-4">${statusBadge(l.loan_status)} ${l.return_condition ? `<span class="text-xs ml-1 font-bold ${l.return_condition === 'rusak' ? 'text-rose-600' : 'text-emerald-600'}">(${l.return_condition})</span>` : ''}</td>
           <td class="p-4 text-right">
             ${l.loan_status === 'returning' ? `
-              <button onclick="openVerifyModal(${l.loan_id})" class="px-3 py-1 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-bold">
+              <button onclick="openVerifyModal(${l.loan_id})" class="px-3 py-1 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-bold transition">
                 Verifikasi
               </button>
             ` : '<span class="text-xs text-slate-400">Terverifikasi</span>'}
@@ -1223,7 +1273,7 @@ SUPABASE_KEY=eyJh......</pre>
     function renderUsersTable() {
       const tbody = document.getElementById('usersTable');
       if (globalUsers.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400">Belum ada pengguna</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400">Belum ada pengguna</td></tr>`;
         return;
       }
 
@@ -1231,15 +1281,32 @@ SUPABASE_KEY=eyJh......</pre>
         <tr class="hover:bg-slate-50 transition">
           <td class="p-4 font-mono text-xs text-slate-400">#${u.id}</td>
           <td class="p-4 font-bold text-slate-900">${u.name}</td>
-          <td class="p-4 text-slate-600">${u.email}</td>
+          <td class="p-4 text-slate-600 font-mono text-xs">${u.email}</td>
           <td class="p-4">${roleBadge(u.role)}</td>
+          <td class="p-4">
+            ${u.delete_requested ? `
+              <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold animate-pulse">
+                <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                <span>Ajukan Hapus</span>
+              </div>
+              ${u.delete_reason ? `<div class="text-[11px] text-slate-500 mt-1 max-w-xs italic">"${u.delete_reason}"</div>` : ''}
+            ` : `<span class="text-xs text-emerald-600 font-semibold flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span> Aktif</span>`}
+          </td>
           <td class="p-4">${roleAccessLabel(u.role)}</td>
           <td class="p-4 text-right">
-            <select onchange="changeUserRole(${u.id}, this.value)" class="text-xs font-semibold rounded-lg border border-slate-200 px-2 py-1 bg-white focus:ring-2 focus:ring-teal-500">
-              <option value="superadmin" ${u.role === 'superadmin' ? 'selected' : ''}>Superadmin</option>
-              <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
-              <option value="user" ${u.role === 'user' || u.role === 'karyawan' ? 'selected' : ''}>Pengguna</option>
-            </select>
+            <div class="inline-flex items-center gap-2">
+              <select onchange="changeUserRole(${u.id}, this.value)" class="text-xs font-semibold rounded-lg border border-slate-200 px-2 py-1 bg-white focus:ring-2 focus:ring-teal-500">
+                <option value="superadmin" ${u.role === 'superadmin' ? 'selected' : ''}>Superadmin</option>
+                <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
+                <option value="user" ${u.role === 'user' || u.role === 'karyawan' ? 'selected' : ''}>Pengguna</option>
+              </select>
+              ${u.role !== 'superadmin' ? `
+                <button onclick="confirmDeleteUser(${u.id}, '${u.name.replace(/'/g, "\\'")}')" title="Hapus Akun Pengguna"
+                  class="px-2.5 py-1 text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition">
+                  Hapus
+                </button>
+              ` : ''}
+            </div>
           </td>
         </tr>
       `).join('');
@@ -1483,6 +1550,82 @@ SUPABASE_KEY=eyJh......</pre>
       }
     }
 
+    // Preview Dokumen Berkas
+    function previewDoc(urlOrB64, title) {
+      if (!urlOrB64) return;
+      document.getElementById('docPreviewTitle').textContent = title || 'Pratinjau Dokumen Berkas';
+      const img = document.getElementById('docPreviewImg');
+      img.src = urlOrB64;
+      document.getElementById('docPreviewModal').classList.remove('hidden');
+    }
+
+    function closeDocPreview() {
+      document.getElementById('docPreviewModal').classList.add('hidden');
+    }
+
+    // Ekspor Laporan Peminjaman ke CSV
+    function exportLoansToCSV() {
+      if (!globalLoans || globalLoans.length === 0) {
+        alert('Belum ada data peminjaman untuk diekspor.');
+        return;
+      }
+      const headers = [
+        'ID Peminjaman',
+        'Nama Peminjam',
+        'Email Peminjam',
+        'Role Peminjam',
+        'Nama Aset',
+        'Kode Aset',
+        'Kategori Aset',
+        'Tanggal Mulai',
+        'Tanggal Selesai',
+        'Status',
+        'Keperluan Peminjaman',
+        'Tanggal Dikembalikan',
+        'Catatan Pengembalian',
+        'Kondisi Pengembalian',
+        'Lampiran Surat',
+        'Lampiran KTP'
+      ];
+
+      const esc = (val) => {
+        if (val === null || val === undefined) return '""';
+        const s = String(val).replace(/"/g, '""');
+        return `"${s}"`;
+      };
+
+      const rows = globalLoans.map(l => [
+        esc(l.loan_id),
+        esc(l.user_name || '-'),
+        esc(l.email || '-'),
+        esc(l.role || 'user'),
+        esc(l.asset_name || '-'),
+        esc(l.code || '-'),
+        esc(l.category || '-'),
+        esc(l.start_date),
+        esc(l.end_date),
+        esc(l.loan_status),
+        esc(l.purpose || '-'),
+        esc(l.return_date || '-'),
+        esc(l.return_note || '-'),
+        esc(l.return_condition || '-'),
+        esc(l.loan_letter_url ? 'Ada Surat Peminjaman' : 'Tidak Ada'),
+        esc(l.identity_card_url ? 'Ada Kartu Pengenal (KTP)' : 'Tidak Ada')
+      ]);
+
+      const csvContent = '\uFEFF' + [headers.map(esc).join(','), ...rows.map(r => r.join(','))].join('\r\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const dateStr = new Date().toISOString().slice(0, 10);
+      a.download = `Laporan_Peminjaman_AssetLoop_${dateStr}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
     // User Modal
     function openUserModal() {
       document.getElementById('userForm').reset();
@@ -1493,11 +1636,36 @@ SUPABASE_KEY=eyJh......</pre>
       document.getElementById('userModal').classList.add('hidden');
     }
 
+    async function confirmDeleteUser(userId, userName) {
+      if (!confirm(`Apakah Anda yakin ingin MENGHAPUS AKUN "${userName}" secara permanen?\n\nPerhatian: Sistem akan memeriksa integritas data. Jika akun masih memiliki aset yang sedang dipinjam atau menunggu verifikasi, penghapusan akan otomatis dibatalkan.`)) return;
+
+      try {
+        const res = await fetch(`${API}/web/users/${userId}`, {
+          method: 'DELETE'
+        });
+        const json = await res.json();
+        if (json.success) {
+          alert(`Akun pengguna "${userName}" berhasil dihapus.`);
+          await loadUsers();
+        } else {
+          alert('Gagal menghapus akun: ' + json.message);
+        }
+      } catch (err) {
+        alert('Error menghapus akun: ' + err.message);
+      }
+    }
+
     async function saveNewUser(e) {
       e.preventDefault();
+      const email = document.getElementById('newUserEmail').value.trim().toLowerCase();
+      if (!email.endsWith('@assetloop.com')) {
+        alert('Gagal: Email wajib menggunakan domain resmi @assetloop.com (contoh: nama@assetloop.com)');
+        return;
+      }
+
       const data = {
         name: document.getElementById('newUserName').value.trim(),
-        email: document.getElementById('newUserEmail').value.trim(),
+        email: email,
         password: document.getElementById('newUserPassword').value,
         role: document.getElementById('newUserRole').value
       };
