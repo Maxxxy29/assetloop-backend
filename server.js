@@ -7,6 +7,52 @@ const bcrypt = require('bcryptjs');
 const db = require('./supabase');
 
 const app = express();
+
+// ===========================================================================
+// SECURITY HARDENING: Anti-Fingerprinting & Security Headers
+// ===========================================================================
+app.disable('x-powered-by');
+
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  next();
+});
+
+// Rate Limiter Sederhana Anti Brute-Force Bot / Hacker
+const authAttempts = new Map();
+function rateLimitAuth(maxAttempts = 15, windowMs = 10 * 60 * 1000) {
+  return (req, res, next) => {
+    const rawIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+    const ip = String(rawIp).split(',')[0].trim();
+    const now = Date.now();
+    const record = authAttempts.get(ip) || { count: 0, resetTime: now + windowMs };
+
+    if (now > record.resetTime) {
+      record.count = 0;
+      record.resetTime = now + windowMs;
+    }
+
+    if (record.count >= maxAttempts) {
+      const waitMin = Math.ceil((record.resetTime - now) / 60000);
+      return res.status(429).json({
+        success: false,
+        message: `Terlalu banyak percobaan. Akses dibatasi sementara demi keamanan. Silakan coba lagi dalam ${waitMin} menit.`
+      });
+    }
+
+    req.authLimiter = {
+      recordSuccess: () => authAttempts.delete(ip),
+      recordFailure: () => {
+        record.count++;
+        authAttempts.set(ip, record);
+      }
+    };
+    next();
+  };
+}
+
 app.use(cors());
 app.use(express.json({ limit: '12mb' }));
 
@@ -34,16 +80,28 @@ app.get('/api/health', async (_req, res) => {
 // AUTHENTICATION
 // ---------------------------------------------------------------------------
 
-// 1. Mobile Login (Superadmin, Admin, User)
-app.post('/api/auth/login', async (req, res) => {
+// 1. Mobile Login (Superadmin, Admin, User) - Dilindungi Anti Brute-Force
+app.post('/api/auth/login', rateLimitAuth(15, 10 * 60 * 1000), async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return fail(res, 'Email dan password wajib diisi', 400);
 
-  const user = await db.findUserByEmail(email);
-  if (!user || !user.password_hash) return fail(res, 'Email atau password salah', 401);
+  const cleanEmail = String(email).trim().toLowerCase();
+  if (!cleanEmail.endsWith('@assetloop.com')) {
+    return fail(res, 'Akses ditolak: Email wajib menggunakan domain resmi @assetloop.com', 400);
+  }
+  const user = await db.findUserByEmail(cleanEmail);
+  if (!user || !user.password_hash) {
+    if (req.authLimiter) req.authLimiter.recordFailure();
+    return fail(res, 'Email atau password salah', 401);
+  }
 
   const match = await bcrypt.compare(password, user.password_hash);
-  if (!match) return fail(res, 'Email atau password salah', 401);
+  if (!match) {
+    if (req.authLimiter) req.authLimiter.recordFailure();
+    return fail(res, 'Email atau password salah', 401);
+  }
+
+  if (req.authLimiter) req.authLimiter.recordSuccess();
 
   ok(res, {
     id: user.id,
@@ -54,16 +112,26 @@ app.post('/api/auth/login', async (req, res) => {
   });
 });
 
-// 2. Web Backend Login (HANYA SUPERADMIN!)
-app.post('/api/web/login', async (req, res) => {
+// 2. Web Backend Login (HANYA SUPERADMIN!) - Dilindungi Anti Brute-Force
+app.post('/api/web/login', rateLimitAuth(15, 10 * 60 * 1000), async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return fail(res, 'Email dan password wajib diisi', 400);
 
-  const user = await db.findUserByEmail(email);
-  if (!user || !user.password_hash) return fail(res, 'Email atau password salah', 401);
+  const cleanEmail = String(email).trim().toLowerCase();
+  if (!cleanEmail.endsWith('@assetloop.com')) {
+    return fail(res, 'Akses ditolak: Email wajib menggunakan domain resmi @assetloop.com', 400);
+  }
+  const user = await db.findUserByEmail(cleanEmail);
+  if (!user || !user.password_hash) {
+    if (req.authLimiter) req.authLimiter.recordFailure();
+    return fail(res, 'Email atau password salah', 401);
+  }
 
   const match = await bcrypt.compare(password, user.password_hash);
-  if (!match) return fail(res, 'Email atau password salah', 401);
+  if (!match) {
+    if (req.authLimiter) req.authLimiter.recordFailure();
+    return fail(res, 'Email atau password salah', 401);
+  }
 
   // VALIDASI PERAN SPESIFIK UNTUK WEB BACKEND:
   if (user.role === 'admin') {
@@ -78,6 +146,8 @@ app.post('/api/web/login', async (req, res) => {
     return fail(res, 'Akses Ditolak: Hanya Superadmin yang diizinkan masuk ke Web Backend.', 403);
   }
 
+  if (req.authLimiter) req.authLimiter.recordSuccess();
+
   ok(res, {
     id: user.id,
     name: user.name,
@@ -89,16 +159,20 @@ app.post('/api/web/login', async (req, res) => {
 });
 
 // 3. Registrasi Pengguna Baru (Mobile App)
-app.post('/api/auth/register', async (req, res) => {
+app.post('/api/auth/register', rateLimitAuth(10, 15 * 60 * 1000), async (req, res) => {
   const { name, email, password } = req.body;
   if (!name || !email || !password || password.length < 6) {
     return fail(res, 'Data pendaftaran tidak valid (nama, email, password minimal 6 karakter)');
   }
+  const cleanEmail = String(email).trim().toLowerCase();
+  if (!cleanEmail.endsWith('@assetloop.com')) {
+    return fail(res, 'Pendaftaran ditolak: Email wajib menggunakan domain resmi @assetloop.com', 400);
+  }
   try {
     const password_hash = await bcrypt.hash(password, 10);
     const user = await db.createUser({
-      name,
-      email,
+      name: String(name).trim(),
+      email: cleanEmail,
       password_hash,
       role: 'user'
     });
@@ -108,8 +182,8 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
-// 4. Lupa & Reset Kata Sandi (Mobile App & Web)
-app.post('/api/auth/reset-password', async (req, res) => {
+// 4. Lupa & Reset Kata Sandi (Mobile App & Web) - Dilindungi Anti Spam/Abuse
+app.post('/api/auth/reset-password', rateLimitAuth(8, 15 * 60 * 1000), async (req, res) => {
   const { email, new_password } = req.body;
   if (!email || !new_password) {
     return fail(res, 'Email dan kata sandi baru wajib diisi', 400);
@@ -118,12 +192,18 @@ app.post('/api/auth/reset-password', async (req, res) => {
     return fail(res, 'Kata sandi baru minimal 6 karakter', 400);
   }
   try {
-    const user = await db.findUserByEmail(email);
+    const cleanEmail = String(email).trim().toLowerCase();
+    if (!cleanEmail.endsWith('@assetloop.com')) {
+      return fail(res, 'Gagal: Email wajib menggunakan domain resmi @assetloop.com', 400);
+    }
+    const user = await db.findUserByEmail(cleanEmail);
     if (!user) {
+      if (req.authLimiter) req.authLimiter.recordFailure();
       return fail(res, 'Email tidak ditemukan. Pastikan email terdaftar.', 404);
     }
     const hash = await bcrypt.hash(new_password, 10);
     await db.updateUserPassword(user.id, hash);
+    if (req.authLimiter) req.authLimiter.recordSuccess();
     try {
       await db.createNotification({
         recipient_email: user.email,
@@ -160,15 +240,58 @@ app.post('/api/web/users', async (req, res) => {
   if (!name || !email || !password || !role) {
     return fail(res, 'Semua data wajib diisi');
   }
+  const cleanEmail = String(email).trim().toLowerCase();
+  if (!cleanEmail.endsWith('@assetloop.com')) {
+    return fail(res, 'Gagal: Email wajib menggunakan domain resmi @assetloop.com', 400);
+  }
   if (!['superadmin', 'admin', 'user'].includes(role)) {
     return fail(res, 'Role tidak valid (pilih: superadmin, admin, atau user)');
   }
   try {
     const password_hash = await bcrypt.hash(password, 10);
-    const user = await db.createUser({ name, email, password_hash, role });
+    const user = await db.createUser({ name, email: cleanEmail, password_hash, role });
     ok(res, user, 201);
   } catch (e) {
     return fail(res, e.message || 'Gagal menambahkan user', 400);
+  }
+});
+
+// Pengajuan Hapus Akun oleh Pengguna Mobile
+app.post('/api/users/:id/request-delete', async (req, res) => {
+  try {
+    const result = await db.requestDeleteUser(req.params.id, req.body.reason);
+    ok(res, result);
+  } catch (e) {
+    fail(res, e.message || 'Gagal mengajukan hapus akun', 400);
+  }
+});
+
+// Pembatalan Pengajuan Hapus Akun
+app.post('/api/users/:id/cancel-delete', async (req, res) => {
+  try {
+    const result = await db.cancelDeleteUserRequest(req.params.id);
+    ok(res, result);
+  } catch (e) {
+    fail(res, e.message || 'Gagal membatalkan pengajuan hapus akun', 400);
+  }
+});
+
+// Hapus Akun Pengguna Secara Permanen (Superadmin)
+app.delete('/api/users/:id', async (req, res) => {
+  try {
+    const result = await db.deleteUser(req.params.id);
+    ok(res, result);
+  } catch (e) {
+    fail(res, e.message || 'Gagal menghapus akun pengguna', 400);
+  }
+});
+
+app.delete('/api/web/users/:id', async (req, res) => {
+  try {
+    const result = await db.deleteUser(req.params.id);
+    ok(res, result);
+  } catch (e) {
+    fail(res, e.message || 'Gagal menghapus akun pengguna', 400);
   }
 });
 
@@ -257,6 +380,35 @@ app.delete('/api/assets/:id', async (req, res) => {
 app.get('/api/loans', async (_req, res) => {
   const loans = await db.getLoans();
   ok(res, loans);
+});
+
+// Ekspor Riwayat Peminjaman ke CSV
+app.get('/api/loans/export', async (_req, res) => {
+  try {
+    const loans = await db.getLoans();
+    const headers = [
+      'ID Peminjaman', 'Nama Peminjam', 'Email Peminjam', 'Role',
+      'Nama Aset', 'Kode Aset', 'Kategori',
+      'Tanggal Mulai', 'Tanggal Selesai', 'Status',
+      'Keperluan', 'Tanggal Dikembalikan', 'Catatan Pengembalian', 'Kondisi',
+      'Surat Peminjaman', 'Kartu Identitas'
+    ];
+    const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const rows = loans.map(l => [
+      esc(l.loan_id), esc(l.user_name || '-'), esc(l.email || '-'), esc(l.role || 'user'),
+      esc(l.asset_name || '-'), esc(l.code || '-'), esc(l.category || '-'),
+      esc(l.start_date), esc(l.end_date), esc(l.loan_status),
+      esc(l.purpose || '-'), esc(l.return_date || '-'), esc(l.return_note || '-'), esc(l.return_condition || '-'),
+      esc(l.loan_letter_url ? 'Dilampirkan' : 'Tidak Ada'),
+      esc(l.identity_card_url ? 'Dilampirkan' : 'Tidak Ada')
+    ]);
+    const csv = '\uFEFF' + [headers.map(esc).join(','), ...rows.map(r => r.join(','))].join('\r\n');
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="Laporan_Peminjaman_AssetLoop_${new Date().toISOString().slice(0, 10)}.csv"`);
+    res.status(200).send(csv);
+  } catch (e) {
+    fail(res, e.message || 'Gagal mengekspor laporan peminjaman', 500);
+  }
 });
 
 app.get('/api/loans/overlap', async (req, res) => {

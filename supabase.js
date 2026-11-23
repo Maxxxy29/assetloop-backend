@@ -36,6 +36,8 @@ const defaultUsers = [
     password_hash: bcrypt.hashSync('superadmin123', 10),
     role: 'superadmin',
     photo: null,
+    delete_requested: false,
+    delete_reason: null,
     created_at: new Date().toISOString()
   },
   {
@@ -45,24 +47,30 @@ const defaultUsers = [
     password_hash: bcrypt.hashSync('admin123', 10),
     role: 'admin',
     photo: null,
+    delete_requested: false,
+    delete_reason: null,
     created_at: new Date().toISOString()
   },
   {
     id: 3,
-    name: 'Admin Perusahaan',
-    email: 'admin@perusahaan.com',
+    name: 'Admin AssetLoop Cabang',
+    email: 'admin.cabang@assetloop.com',
     password_hash: bcrypt.hashSync('admin123', 10),
     role: 'admin',
     photo: null,
+    delete_requested: false,
+    delete_reason: null,
     created_at: new Date().toISOString()
   },
   {
     id: 4,
     name: 'Andi Pratama',
-    email: 'andi@perusahaan.com',
+    email: 'andi@assetloop.com',
     password_hash: bcrypt.hashSync('andi123', 10),
     role: 'user',
     photo: null,
+    delete_requested: false,
+    delete_reason: null,
     created_at: new Date().toISOString()
   },
   {
@@ -72,33 +80,41 @@ const defaultUsers = [
     password_hash: bcrypt.hashSync('user123', 10),
     role: 'user',
     photo: null,
+    delete_requested: false,
+    delete_reason: null,
     created_at: new Date().toISOString()
   },
   {
     id: 6,
     name: 'Siti Nurhaliza',
-    email: 'siti@perusahaan.com',
+    email: 'siti@assetloop.com',
     password_hash: bcrypt.hashSync('siti123', 10),
     role: 'user',
     photo: null,
+    delete_requested: false,
+    delete_reason: null,
     created_at: new Date().toISOString()
   },
   {
     id: 7,
     name: 'Budi Santoso',
-    email: 'budi@perusahaan.com',
+    email: 'budi@assetloop.com',
     password_hash: bcrypt.hashSync('budi123', 10),
     role: 'user',
     photo: null,
+    delete_requested: false,
+    delete_reason: null,
     created_at: new Date().toISOString()
   },
   {
     id: 8,
     name: 'Rina Marlina',
-    email: 'rina@perusahaan.com',
+    email: 'rina@assetloop.com',
     password_hash: bcrypt.hashSync('rina123', 10),
     role: 'user',
     photo: null,
+    delete_requested: false,
+    delete_reason: null,
     created_at: new Date().toISOString()
   }
 ];
@@ -262,7 +278,7 @@ async function findUserById(id) {
     try {
       const { data, error } = await supabase
         .from('users')
-        .select('id, name, email, role, photo, created_at')
+        .select('id, name, email, role, photo, delete_requested, delete_reason, created_at')
         .eq('id', nid)
         .maybeSingle();
       if (!error && data) return data;
@@ -270,7 +286,16 @@ async function findUserById(id) {
   }
   const u = memUsers.find(x => x.id === nid);
   if (!u) return null;
-  return { id: u.id, name: u.name, email: u.email, role: u.role, photo: u.photo, created_at: u.created_at };
+  return {
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    role: u.role,
+    photo: u.photo,
+    delete_requested: Boolean(u.delete_requested),
+    delete_reason: u.delete_reason || null,
+    created_at: u.created_at
+  };
 }
 
 async function getAllUsers() {
@@ -278,12 +303,21 @@ async function getAllUsers() {
     try {
       const { data, error } = await supabase
         .from('users')
-        .select('id, name, email, role, photo, created_at')
+        .select('id, name, email, role, photo, delete_requested, delete_reason, created_at')
         .order('id', { ascending: true });
       if (!error && data) return data;
     } catch (_) {}
   }
-  return memUsers.map(u => ({ id: u.id, name: u.name, email: u.email, role: u.role, photo: u.photo, created_at: u.created_at }));
+  return memUsers.map(u => ({
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    role: u.role,
+    photo: u.photo,
+    delete_requested: Boolean(u.delete_requested),
+    delete_reason: u.delete_reason || null,
+    created_at: u.created_at
+  }));
 }
 
 async function getAdmins() {
@@ -303,17 +337,27 @@ async function getAdmins() {
 
 async function createUser({ name, email, password_hash, role = 'user' }) {
   const em = email.toLowerCase().trim();
+  if (!em.endsWith('@assetloop.com')) {
+    throw new Error('Email wajib menggunakan domain resmi @assetloop.com');
+  }
   if (supabase) {
     try {
       const { data, error } = await supabase
         .from('users')
-        .insert([{ name: name.trim(), email: em, password_hash, role }])
-        .select('id, name, email, role, photo, created_at')
+        .insert([{
+          name: name.trim(),
+          email: em,
+          password_hash,
+          role,
+          delete_requested: false,
+          delete_reason: null
+        }])
+        .select('id, name, email, role, photo, delete_requested, delete_reason, created_at')
         .single();
       if (!error && data) return data;
       if (error && error.code === '23505') throw new Error('Email sudah terdaftar');
     } catch (err) {
-      if (err.message === 'Email sudah terdaftar') throw err;
+      if (err.message.includes('terdaftar') || err.message.includes('domain')) throw err;
     }
   }
   if (memUsers.some(u => u.email.toLowerCase() === em)) {
@@ -326,10 +370,103 @@ async function createUser({ name, email, password_hash, role = 'user' }) {
     password_hash,
     role,
     photo: null,
+    delete_requested: false,
+    delete_reason: null,
     created_at: new Date().toISOString()
   };
   memUsers.push(newUser);
-  return { id: newUser.id, name: newUser.name, email: newUser.email, role: newUser.role, photo: newUser.photo, created_at: newUser.created_at };
+  return {
+    id: newUser.id,
+    name: newUser.name,
+    email: newUser.email,
+    role: newUser.role,
+    photo: newUser.photo,
+    delete_requested: false,
+    delete_reason: null,
+    created_at: newUser.created_at
+  };
+}
+
+async function requestDeleteUser(id, reason) {
+  const nid = Number(id);
+  // Cek apakah ada peminjaman aktif
+  const hasActive = memLoans.some(l => l.user_id === nid && ['pending', 'approved', 'returning'].includes(l.status));
+  if (hasActive) {
+    throw new Error('Pengguna masih memiliki transaksi peminjaman aktif. Harap selesaikan atau kembalikan semua aset terlebih dahulu sebelum mengajukan hapus akun.');
+  }
+
+  if (supabase) {
+    try {
+      const { count } = await supabase
+        .from('loans')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', nid)
+        .in('status', ['pending', 'approved', 'returning']);
+      if (count > 0) {
+        throw new Error('Pengguna masih memiliki transaksi peminjaman aktif. Harap selesaikan atau kembalikan semua aset terlebih dahulu sebelum mengajukan hapus akun.');
+      }
+      await supabase.from('users').update({
+        delete_requested: true,
+        delete_reason: reason || 'Pengajuan hapus akun oleh pengguna'
+      }).eq('id', nid);
+    } catch (err) {
+      if (err.message.includes('aktif')) throw err;
+    }
+  }
+
+  const u = memUsers.find(x => x.id === nid);
+  if (u) {
+    u.delete_requested = true;
+    u.delete_reason = reason || 'Pengajuan hapus akun oleh pengguna';
+  }
+  return { success: true, message: 'Pengajuan hapus akun berhasil dikirim ke Superadmin' };
+}
+
+async function cancelDeleteUserRequest(id) {
+  const nid = Number(id);
+  if (supabase) {
+    try {
+      await supabase.from('users').update({
+        delete_requested: false,
+        delete_reason: null
+      }).eq('id', nid);
+    } catch (_) {}
+  }
+  const u = memUsers.find(x => x.id === nid);
+  if (u) {
+    u.delete_requested = false;
+    u.delete_reason = null;
+  }
+  return { success: true };
+}
+
+async function deleteUser(id) {
+  const nid = Number(id);
+  // Cek apakah ada peminjaman aktif
+  const hasActive = memLoans.some(l => l.user_id === nid && ['pending', 'approved', 'returning'].includes(l.status));
+  if (hasActive) {
+    throw new Error('Tidak dapat menghapus akun: Pengguna masih memiliki peminjaman aktif yang belum dikembalikan!');
+  }
+
+  if (supabase) {
+    try {
+      const { count } = await supabase
+        .from('loans')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', nid)
+        .in('status', ['pending', 'approved', 'returning']);
+      if (count > 0) {
+        throw new Error('Tidak dapat menghapus akun: Pengguna masih memiliki peminjaman aktif yang belum dikembalikan!');
+      }
+      // Hapus data pengguna
+      await supabase.from('users').delete().eq('id', nid);
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  memUsers = memUsers.filter(x => x.id !== nid);
+  return { deleted: true, id: nid };
 }
 
 async function updateUser(id, { name }) {
@@ -552,7 +689,7 @@ async function getLoans() {
       const { data, error } = await supabase
         .from('loans')
         .select(`
-          id, start_date, end_date, purpose, status, return_date, return_note, return_condition, created_at,
+          id, start_date, end_date, purpose, status, return_date, return_note, return_condition, loan_letter_url, identity_card_url, created_at,
           asset:assets ( id, code, name, category, asset_type, extra, total_stock, damaged_count ),
           user:users ( id, name, email, role )
         `)
@@ -569,6 +706,8 @@ async function getLoans() {
           return_date: l.return_date,
           return_note: l.return_note,
           return_condition: l.return_condition,
+          loan_letter_url: l.loan_letter_url || null,
+          identity_card_url: l.identity_card_url || null,
           asset_id: l.asset?.id,
           code: l.asset?.code,
           asset_name: l.asset?.name,
@@ -599,6 +738,8 @@ async function getLoans() {
       return_date: l.return_date,
       return_note: l.return_note,
       return_condition: l.return_condition,
+      loan_letter_url: l.loan_letter_url || null,
+      identity_card_url: l.identity_card_url || null,
       asset_id: a.id,
       code: a.code,
       asset_name: a.name,
@@ -639,6 +780,9 @@ async function countOverlapping(assetId, start, end) {
 }
 
 async function createLoan(b) {
+  const loanLetter = b.loan_letter_url ? String(b.loan_letter_url).trim() : null;
+  const identityCard = b.identity_card_url ? String(b.identity_card_url).trim() : null;
+
   if (supabase) {
     try {
       const { data, error } = await supabase.from('loans').insert([{
@@ -647,9 +791,22 @@ async function createLoan(b) {
         start_date: b.start_date,
         end_date: b.end_date,
         purpose: b.purpose,
-        status: 'pending'
+        status: 'pending',
+        loan_letter_url: loanLetter,
+        identity_card_url: identityCard
       }]).select().single();
       if (!error && data) return { id: data.id };
+      if (error && (error.message.includes('loan_letter_url') || error.message.includes('identity_card_url'))) {
+        const { data: d2, error: e2 } = await supabase.from('loans').insert([{
+          asset_id: Number(b.asset_id),
+          user_id: Number(b.user_id),
+          start_date: b.start_date,
+          end_date: b.end_date,
+          purpose: b.purpose,
+          status: 'pending'
+        }]).select().single();
+        if (!e2 && d2) return { id: d2.id };
+      }
     } catch (_) {}
   }
   const newLoan = {
@@ -663,6 +820,8 @@ async function createLoan(b) {
     return_date: null,
     return_note: null,
     return_condition: null,
+    loan_letter_url: loanLetter,
+    identity_card_url: identityCard,
     created_at: new Date().toISOString()
   };
   memLoans.unshift(newLoan);
@@ -826,6 +985,9 @@ module.exports = {
   updateUserPhoto,
   updateUserPassword,
   updateUserRole,
+  requestDeleteUser,
+  cancelDeleteUserRequest,
+  deleteUser,
   getAssets,
   createAsset,
   updateAsset,
