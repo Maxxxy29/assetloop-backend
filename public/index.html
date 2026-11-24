@@ -206,6 +206,7 @@
           class="tab-btn px-4 py-3 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2 whitespace-nowrap">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
           Pengguna & Role
+          <span id="badgeDeletionRequests" class="hidden px-2 py-0.5 text-xs bg-rose-100 text-rose-800 rounded-full font-bold">0</span>
         </button>
         <button onclick="switchTab('supabase')" id="tabBtn-supabase"
           class="tab-btn px-4 py-3 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2 whitespace-nowrap">
@@ -453,6 +454,19 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
             Tambah Pengguna Baru
           </button>
+        </div>
+
+        <!-- Banner Peringatan Permohonan Hapus Akun jika ada -->
+        <div id="deletionRequestsBanner" class="hidden p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 flex items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center shrink-0 text-rose-600">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            </div>
+            <div>
+              <div class="font-bold text-sm" id="deletionRequestsCountText">Ada Permohonan Hapus Akun</div>
+              <div class="text-xs text-rose-600 mt-0.5">Pengguna di bawah ini mengajukan penutupan akun. Anda dapat menolak permohonan atau menyetujuinya untuk menghapus akun secara permanen.</div>
+            </div>
+          </div>
         </div>
 
         <!-- Role Legend Card -->
@@ -1049,6 +1063,17 @@ SUPABASE_KEY=eyJh......</pre>
       } else {
         badgeReturning.classList.add('hidden');
       }
+
+      const deletionCount = globalUsers.filter(u => u.delete_requested).length;
+      const badgeDel = document.getElementById('badgeDeletionRequests');
+      if (badgeDel) {
+        if (deletionCount > 0) {
+          badgeDel.textContent = deletionCount;
+          badgeDel.classList.remove('hidden');
+        } else {
+          badgeDel.classList.add('hidden');
+        }
+      }
     }
 
     function statusBadge(status) {
@@ -1272,44 +1297,96 @@ SUPABASE_KEY=eyJh......</pre>
 
     function renderUsersTable() {
       const tbody = document.getElementById('usersTable');
+      const delReqs = globalUsers.filter(u => u.delete_requested);
+
+      // Update banner peringatan permohonan hapus akun
+      const banner = document.getElementById('deletionRequestsBanner');
+      const countText = document.getElementById('deletionRequestsCountText');
+      if (banner) {
+        if (delReqs.length > 0) {
+          banner.classList.remove('hidden');
+          if (countText) countText.textContent = `Ada ${delReqs.length} Permohonan Hapus Akun Menunggu Review Superadmin`;
+        } else {
+          banner.classList.add('hidden');
+        }
+      }
+
+      // Update badge tab
+      const badgeDel = document.getElementById('badgeDeletionRequests');
+      if (badgeDel) {
+        if (delReqs.length > 0) {
+          badgeDel.textContent = delReqs.length;
+          badgeDel.classList.remove('hidden');
+        } else {
+          badgeDel.classList.add('hidden');
+        }
+      }
+
       if (globalUsers.length === 0) {
         tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400">Belum ada pengguna</td></tr>`;
         return;
       }
 
-      tbody.innerHTML = globalUsers.map(u => `
-        <tr class="hover:bg-slate-50 transition">
+      // Prioritaskan akun yang mengajukan hapus di posisi teratas agar langsung terlihat
+      const sortedUsers = [...globalUsers].sort((a, b) => {
+        if (a.delete_requested && !b.delete_requested) return -1;
+        if (!a.delete_requested && b.delete_requested) return 1;
+        return a.id - b.id;
+      });
+
+      tbody.innerHTML = sortedUsers.map(u => {
+        const isSelf = currentUser && currentUser.id === u.id;
+        const rowBg = u.delete_requested
+          ? 'bg-rose-50/60 hover:bg-rose-100/60 border-l-4 border-l-rose-500'
+          : 'hover:bg-slate-50';
+
+        return `
+        <tr class="${rowBg} transition">
           <td class="p-4 font-mono text-xs text-slate-400">#${u.id}</td>
-          <td class="p-4 font-bold text-slate-900">${u.name}</td>
-          <td class="p-4 text-slate-600 font-mono text-xs">${u.email}</td>
+          <td class="p-4">
+            <div class="font-bold text-slate-900">${escapeHtml(u.name)}</div>
+            ${isSelf ? '<span class="inline-block px-2 py-0.5 mt-0.5 text-[10px] font-bold bg-purple-100 text-purple-700 rounded-full">Akun Anda</span>' : ''}
+          </td>
+          <td class="p-4 text-slate-600 font-mono text-xs">${escapeHtml(u.email)}</td>
           <td class="p-4">${roleBadge(u.role)}</td>
           <td class="p-4">
             ${u.delete_requested ? `
-              <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold animate-pulse">
-                <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+              <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-100 border border-rose-300 text-rose-800 text-xs font-bold animate-pulse">
+                <svg class="w-3.5 h-3.5 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                 <span>Ajukan Hapus</span>
               </div>
-              ${u.delete_reason ? `<div class="text-[11px] text-slate-500 mt-1 max-w-xs italic">"${u.delete_reason}"</div>` : ''}
+              ${u.delete_reason ? `<div class="text-[11px] text-rose-700 mt-1 max-w-xs font-medium italic">"${escapeHtml(u.delete_reason)}"</div>` : ''}
             ` : `<span class="text-xs text-emerald-600 font-semibold flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span> Aktif</span>`}
           </td>
           <td class="p-4">${roleAccessLabel(u.role)}</td>
           <td class="p-4 text-right">
             <div class="inline-flex items-center gap-2">
-              <select onchange="changeUserRole(${u.id}, this.value)" class="text-xs font-semibold rounded-lg border border-slate-200 px-2 py-1 bg-white focus:ring-2 focus:ring-teal-500">
+              <select onchange="changeUserRole(${u.id}, this.value)" ${isSelf ? 'disabled title="Tidak dapat mengubah role sendiri"' : ''}
+                class="text-xs font-semibold rounded-lg border border-slate-200 px-2 py-1 bg-white focus:ring-2 focus:ring-teal-500 disabled:opacity-50">
                 <option value="superadmin" ${u.role === 'superadmin' ? 'selected' : ''}>Superadmin</option>
                 <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
                 <option value="user" ${u.role === 'user' || u.role === 'karyawan' ? 'selected' : ''}>Pengguna</option>
               </select>
-              ${u.role !== 'superadmin' ? `
-                <button onclick="confirmDeleteUser(${u.id}, '${u.name.replace(/'/g, "\\'")}')" title="Hapus Akun Pengguna"
+
+              ${u.delete_requested ? `
+                <button onclick="cancelUserDeleteRequest(${u.id})" title="Tolak / Batalkan Permohonan Hapus Akun"
+                  class="px-2.5 py-1 text-xs font-bold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 rounded-lg transition shadow-sm">
+                  Tolak
+                </button>
+                <button onclick="confirmDeleteUser(${u.id})" title="Setujui dan Hapus Akun Permanen"
+                  class="px-2.5 py-1 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-sm transition">
+                  Hapus Permanen
+                </button>
+              ` : (isSelf ? '' : `
+                <button onclick="confirmDeleteUser(${u.id})" title="Hapus Akun Pengguna"
                   class="px-2.5 py-1 text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition">
                   Hapus
                 </button>
-              ` : ''}
+              `)}
             </div>
           </td>
         </tr>
-      `).join('');
+      `}).join('');
     }
 
     // Role changer
@@ -1636,8 +1713,30 @@ SUPABASE_KEY=eyJh......</pre>
       document.getElementById('userModal').classList.add('hidden');
     }
 
-    async function confirmDeleteUser(userId, userName) {
-      if (!confirm(`Apakah Anda yakin ingin MENGHAPUS AKUN "${userName}" secara permanen?\n\nPerhatian: Sistem akan memeriksa integritas data. Jika akun masih memiliki aset yang sedang dipinjam atau menunggu verifikasi, penghapusan akan otomatis dibatalkan.`)) return;
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    async function confirmDeleteUser(userId, fallbackName) {
+      const user = globalUsers.find(x => x.id === userId);
+      const userName = user ? user.name : (fallbackName || 'Pengguna #' + userId);
+
+      if (currentUser && currentUser.id === userId) {
+        alert('Operasi dibatalkan: Anda tidak dapat menghapus akun Anda sendiri yang sedang aktif digunakan.');
+        return;
+      }
+
+      const confirmMsg = user && user.delete_requested
+        ? `Apakah Anda yakin ingin menyetujui permohonan dan MENGHAPUS AKUN "${userName}" secara permanen?\n\nAlasan pengguna: "${user.delete_reason || '-'}"\n\nSistem akan memverifikasi apakah akun memiliki aset yang sedang dipinjam sebelum dihapus.`
+        : `Apakah Anda yakin ingin MENGHAPUS AKUN "${userName}" secara permanen?\n\nPerhatian: Sistem akan memeriksa integritas data. Jika akun masih memiliki aset yang sedang dipinjam atau menunggu verifikasi, penghapusan akan otomatis dibatalkan.`;
+
+      if (!confirm(confirmMsg)) return;
 
       try {
         const res = await fetch(`${API}/web/users/${userId}`, {
@@ -1647,11 +1746,35 @@ SUPABASE_KEY=eyJh......</pre>
         if (json.success) {
           alert(`Akun pengguna "${userName}" berhasil dihapus.`);
           await loadUsers();
+          updateStats();
         } else {
           alert('Gagal menghapus akun: ' + json.message);
         }
       } catch (err) {
         alert('Error menghapus akun: ' + err.message);
+      }
+    }
+
+    async function cancelUserDeleteRequest(userId) {
+      const user = globalUsers.find(x => x.id === userId);
+      const userName = user ? user.name : 'Pengguna #' + userId;
+
+      if (!confirm(`Tolak pengajuan hapus akun untuk "${userName}"?\n\nStatus akun akan dikembalikan menjadi normal (Aktif).`)) return;
+
+      try {
+        const res = await fetch(`${API}/users/${userId}/cancel-delete`, {
+          method: 'POST'
+        });
+        const json = await res.json();
+        if (json.success) {
+          alert(`Pengajuan hapus akun untuk "${userName}" berhasil ditolak/dibatalkan.`);
+          await loadUsers();
+          updateStats();
+        } else {
+          alert('Gagal menolak pengajuan: ' + json.message);
+        }
+      } catch (err) {
+        alert('Error: ' + err.message);
       }
     }
 
