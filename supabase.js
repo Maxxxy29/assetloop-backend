@@ -389,28 +389,34 @@ async function createUser({ name, email, password_hash, role = 'user' }) {
 
 async function requestDeleteUser(id, reason) {
   const nid = Number(id);
-  // Cek apakah ada peminjaman aktif
-  const hasActive = memLoans.some(l => l.user_id === nid && ['pending', 'approved', 'returning'].includes(l.status));
-  if (hasActive) {
-    throw new Error('Pengguna masih memiliki transaksi peminjaman aktif. Harap selesaikan atau kembalikan semua aset terlebih dahulu sebelum mengajukan hapus akun.');
-  }
 
   if (supabase) {
     try {
-      const { count } = await supabase
+      const { count, error: countErr } = await supabase
         .from('loans')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', nid)
         .in('status', ['pending', 'approved', 'returning']);
-      if (count > 0) {
+      if (countErr) {
+        console.error('[requestDeleteUser] count error:', countErr);
+      } else if (count > 0) {
         throw new Error('Pengguna masih memiliki transaksi peminjaman aktif. Harap selesaikan atau kembalikan semua aset terlebih dahulu sebelum mengajukan hapus akun.');
       }
-      await supabase.from('users').update({
+
+      const { error: updErr } = await supabase.from('users').update({
         delete_requested: true,
         delete_reason: reason || 'Pengajuan hapus akun oleh pengguna'
       }).eq('id', nid);
+      if (updErr) throw updErr;
     } catch (err) {
-      if (err.message.includes('aktif')) throw err;
+      if (err.message && err.message.includes('aktif')) throw err;
+      console.error('[requestDeleteUser] supabase update error:', err);
+    }
+  } else {
+    // Mode fallback in-memory jika tanpa Supabase
+    const hasActive = memLoans.some(l => l.user_id === nid && ['pending', 'approved', 'returning'].includes(l.status));
+    if (hasActive) {
+      throw new Error('Pengguna masih memiliki transaksi peminjaman aktif. Harap selesaikan atau kembalikan semua aset terlebih dahulu sebelum mengajukan hapus akun.');
     }
   }
 
@@ -426,42 +432,69 @@ async function cancelDeleteUserRequest(id) {
   const nid = Number(id);
   if (supabase) {
     try {
-      await supabase.from('users').update({
+      const { error: updErr } = await supabase.from('users').update({
         delete_requested: false,
         delete_reason: null
       }).eq('id', nid);
-    } catch (_) {}
+      if (updErr) console.error('[cancelDeleteUserRequest] update error:', updErr);
+    } catch (err) {
+      console.error('[cancelDeleteUserRequest] error:', err);
+    }
   }
   const u = memUsers.find(x => x.id === nid);
   if (u) {
     u.delete_requested = false;
     u.delete_reason = null;
   }
-  return { success: true };
+  return { success: true, message: 'Pengajuan hapus akun berhasil dibatalkan' };
 }
 
 async function deleteUser(id) {
   const nid = Number(id);
-  // Cek apakah ada peminjaman aktif
-  const hasActive = memLoans.some(l => l.user_id === nid && ['pending', 'approved', 'returning'].includes(l.status));
-  if (hasActive) {
-    throw new Error('Tidak dapat menghapus akun: Pengguna masih memiliki peminjaman aktif yang belum dikembalikan!');
-  }
 
   if (supabase) {
     try {
-      const { count } = await supabase
+      // 1. Cek apakah ada peminjaman aktif di Supabase
+      const { count, error: countErr } = await supabase
         .from('loans')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', nid)
         .in('status', ['pending', 'approved', 'returning']);
-      if (count > 0) {
+      if (countErr) {
+        console.error('[deleteUser] error checking active loans in Supabase:', countErr);
+      } else if (count > 0) {
         throw new Error('Tidak dapat menghapus akun: Pengguna masih memiliki peminjaman aktif yang belum dikembalikan!');
       }
-      // Hapus data pengguna
-      await supabase.from('users').delete().eq('id', nid);
+
+      // 2. Bersihkan notifikasi terkait email pengguna sebelum dihapus
+      const { data: userRecord } = await supabase.from('users').select('email').eq('id', nid).maybeSingle();
+      if (userRecord && userRecord.email) {
+        const cleanEm = userRecord.email.toLowerCase().trim();
+        await supabase.from('notifications').delete().ilike('recipient_email', cleanEm);
+      }
+
+      // 3. Bersihkan riwayat peminjaman (yang sudah returned/rejected) dari pengguna
+      await supabase.from('loans').delete().eq('user_id', nid);
+
+      // 4. Hapus data pengguna di Supabase
+      const { error: delErr } = await supabase.from('users').delete().eq('id', nid);
+      if (delErr) {
+        console.error('[deleteUser] error deleting user in Supabase:', delErr);
+        throw delErr;
+      }
     } catch (err) {
       throw err;
+    }
+  } else {
+    // Mode fallback in-memory
+    const hasActive = memLoans.some(l => l.user_id === nid && ['pending', 'approved', 'returning'].includes(l.status));
+    if (hasActive) {
+      throw new Error('Tidak dapat menghapus akun: Pengguna masih memiliki peminjaman aktif yang belum dikembalikan!');
+    }
+    memLoans = memLoans.filter(l => l.user_id !== nid);
+    const uMem = memUsers.find(x => x.id === nid);
+    if (uMem && uMem.email) {
+      memNotifications = memNotifications.filter(n => n.recipient_email.toLowerCase() !== uMem.email.toLowerCase());
     }
   }
 
