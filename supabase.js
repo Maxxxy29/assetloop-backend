@@ -267,7 +267,7 @@ async function findUserByEmail(email) {
         .limit(1)
         .maybeSingle();
       if (!error && data) return data;
-    } catch (_) {}
+    } catch (_) { }
   }
   return memUsers.find(u => u.email.toLowerCase() === em) || null;
 }
@@ -282,7 +282,7 @@ async function findUserById(id) {
         .eq('id', nid)
         .maybeSingle();
       if (!error && data) return data;
-    } catch (_) {}
+    } catch (_) { }
   }
   const u = memUsers.find(x => x.id === nid);
   if (!u) return null;
@@ -306,7 +306,7 @@ async function getAllUsers() {
         .select('id, name, email, role, photo, delete_requested, delete_reason, created_at')
         .order('id', { ascending: true });
       if (!error && data) return data;
-    } catch (_) {}
+    } catch (_) { }
   }
   return memUsers.map(u => ({
     id: u.id,
@@ -328,7 +328,7 @@ async function getAdmins() {
         .select('id, name, email, role, photo')
         .in('role', ['superadmin', 'admin']);
       if (!error && data) return data;
-    } catch (_) {}
+    } catch (_) { }
   }
   return memUsers
     .filter(u => u.role === 'superadmin' || u.role === 'admin')
@@ -507,7 +507,7 @@ async function updateUser(id, { name }) {
   if (supabase) {
     try {
       await supabase.from('users').update({ name: name.trim() }).eq('id', nid);
-    } catch (_) {}
+    } catch (_) { }
   }
   const u = memUsers.find(x => x.id === nid);
   if (u) u.name = name.trim();
@@ -519,7 +519,7 @@ async function updateUserPhoto(id, photo) {
   if (supabase) {
     try {
       await supabase.from('users').update({ photo: photo || null }).eq('id', nid);
-    } catch (_) {}
+    } catch (_) { }
   }
   const u = memUsers.find(x => x.id === nid);
   if (u) u.photo = photo || null;
@@ -531,7 +531,7 @@ async function updateUserPassword(id, password_hash) {
   if (supabase) {
     try {
       await supabase.from('users').update({ password_hash }).eq('id', nid);
-    } catch (_) {}
+    } catch (_) { }
   }
   const u = memUsers.find(x => x.id === nid);
   if (u) u.password_hash = password_hash;
@@ -546,7 +546,7 @@ async function updateUserRole(id, role) {
   if (supabase) {
     try {
       await supabase.from('users').update({ role }).eq('id', nid);
-    } catch (_) {}
+    } catch (_) { }
   }
   const u = memUsers.find(x => x.id === nid);
   if (u) u.role = role;
@@ -575,7 +575,7 @@ async function getAssets() {
           borrowed: countMap[a.id] || 0
         }));
       }
-    } catch (_) {}
+    } catch (_) { }
   }
   return memAssets.map(a => {
     const borrowed = memLoans.filter(l => l.asset_id === a.id && ['approved', 'returning'].includes(l.status)).length;
@@ -756,7 +756,7 @@ async function getLoans() {
           role: l.user?.role
         }));
       }
-    } catch (_) {}
+    } catch (_) { }
   }
   return memLoans.map(l => {
     const a = memAssets.find(x => x.id === l.asset_id) || {};
@@ -802,7 +802,7 @@ async function countOverlapping(assetId, start, end) {
         .lte('start_date', end)
         .gte('end_date', start);
       if (!error && typeof count === 'number') return count;
-    } catch (_) {}
+    } catch (_) { }
   }
   return memLoans.filter(l =>
     l.asset_id === nid &&
@@ -840,7 +840,7 @@ async function createLoan(b) {
         }]).select().single();
         if (!e2 && d2) return { id: d2.id };
       }
-    } catch (_) {}
+    } catch (_) { }
   }
   const newLoan = {
     id: nextLoanId++,
@@ -866,7 +866,7 @@ async function updateLoanStatus(id, status) {
   if (supabase) {
     try {
       await supabase.from('loans').update({ status }).eq('id', nid);
-    } catch (_) {}
+    } catch (_) { }
   }
   const l = memLoans.find(x => x.id === nid);
   if (l) l.status = status;
@@ -882,7 +882,7 @@ async function returnLoan(id, return_date, return_note) {
         return_date,
         return_note
       }).eq('id', nid);
-    } catch (_) {}
+    } catch (_) { }
   }
   const l = memLoans.find(x => x.id === nid);
   if (l) {
@@ -915,7 +915,7 @@ async function completeReturn(id, damaged) {
           }
         }
       }
-    } catch (_) {}
+    } catch (_) { }
   }
 
   const l = memLoans.find(x => x.id === nid);
@@ -945,7 +945,7 @@ async function getNotifications(email) {
         .ilike('recipient_email', em)
         .order('created_at', { ascending: false });
       if (!error && data) return data;
-    } catch (_) {}
+    } catch (_) { }
   }
   return memNotifications
     .filter(n => n.recipient_email.toLowerCase() === em)
@@ -965,7 +965,7 @@ async function createNotification(b) {
         is_read: false
       }]).select().single();
       if (!error && data) return { id: data.id };
-    } catch (_) {}
+    } catch (_) { }
   }
   const newN = {
     id: nextNotifId++,
@@ -986,7 +986,7 @@ async function markNotificationRead(id) {
   if (supabase) {
     try {
       await supabase.from('notifications').update({ is_read: true }).eq('id', nid);
-    } catch (_) {}
+    } catch (_) { }
   }
   const n = memNotifications.find(x => x.id === nid);
   if (n) n.is_read = true;
@@ -998,7 +998,7 @@ async function markAllNotificationsRead(email) {
   if (supabase) {
     try {
       await supabase.from('notifications').update({ is_read: true }).ilike('recipient_email', em);
-    } catch (_) {}
+    } catch (_) { }
   }
   memNotifications.forEach(n => {
     if (n.recipient_email.toLowerCase() === em) n.is_read = true;
