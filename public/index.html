@@ -1231,9 +1231,9 @@ SUPABASE_KEY=eyJh......</pre>
                 </button>
               ` : '<span class="text-xs text-slate-300">-</span>'}
               ${l.identity_card_url ? `
-                <button onclick="previewDoc('${l.identity_card_url.replace(/'/g, "\\'")}', 'Kartu Tanda Pengenal (KTP) - ${l.user_name || ''}')" 
-                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold border border-blue-200 transition" title="Lihat KTP">
-                  <span>🪪 KTP</span>
+                <button onclick="previewDoc('${l.identity_card_url.replace(/'/g, "\\'")}', 'Kartu Identitas - ${l.user_name || ''}')" 
+                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold border border-blue-200 transition" title="Lihat Kartu Identitas">
+                  <span>🪪 Identitas</span>
                 </button>
               ` : ''}
             </div>
@@ -1662,7 +1662,7 @@ SUPABASE_KEY=eyJh......</pre>
         'Catatan Pengembalian',
         'Kondisi Pengembalian',
         'Lampiran Surat',
-        'Lampiran KTP'
+        'Lampiran Kartu Identitas'
       ];
 
       const esc = (val) => {
@@ -1687,7 +1687,7 @@ SUPABASE_KEY=eyJh......</pre>
         esc(l.return_note || '-'),
         esc(l.return_condition || '-'),
         esc(l.loan_letter_url ? 'Ada Surat Peminjaman' : 'Tidak Ada'),
-        esc(l.identity_card_url ? 'Ada Kartu Pengenal (KTP)' : 'Tidak Ada')
+        esc(l.identity_card_url ? 'Ada Kartu Identitas' : 'Tidak Ada')
       ]);
 
       const csvContent = '\uFEFF' + [headers.map(esc).join(','), ...rows.map(r => r.join(','))].join('\r\n');
